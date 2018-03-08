@@ -118,6 +118,16 @@ app.post('/todos', function (req, res) {
     // res.json(body);
 });
 
+ app.post('/users', function (req, res) {
+     var body = _.pick(req.body,'email', 'password');
+     db.user.create(body).then(function (data) {
+     	res.json(data.toJSON());
+     },function (e) {
+         res.status(400).json(e);
+     });
+ });
+
+
 app.delete('/todos/:id', function (req, res) {
     // var todoid = parseInt(req.params.id,10);
     // var matchedTodo = _.findWhere(todos, {id: todoid});
