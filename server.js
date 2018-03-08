@@ -3,6 +3,7 @@ var bodyParser = require('body-parser');
 var _ = require('underscore'); 
 var db = require('./db.js');
 var app = express();
+var bcrypt = require('bcrypt');
 
 var PORT = process.env.PORT || 3000;
 // var todos = [{
@@ -121,12 +122,31 @@ app.post('/todos', function (req, res) {
  app.post('/users', function (req, res) {
      var body = _.pick(req.body,'email', 'password');
      db.user.create(body).then(function (data) {
-     	res.json(data.toJSON());
+     	res.json(data.toPublicJSON());
      },function (e) {
          res.status(400).json(e);
      });
  });
 
+app.post('/users/login', function (req, res) {
+         var body = _.pick(req.body,'email', 'password');
+         if (typeof body.email !== 'string' && typeof body.password !== 'string'){
+             res.status(404).send();
+         }
+         db.user.findOne({
+           where: {
+              email: body.email
+           }
+         }).then(function (user) {
+             if( !user || !bcrypt.compareSync(body.password,user.get('password_hash'))){
+                return res.status(401).send();
+             }
+                res.json(user.toPublicJSON());
+             
+         }, function (e) {
+              res.status(500).send();
+         });   
+});
 
 app.delete('/todos/:id', function (req, res) {
     // var todoid = parseInt(req.params.id,10);
