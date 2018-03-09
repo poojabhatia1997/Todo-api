@@ -130,22 +130,30 @@ app.post('/todos', function (req, res) {
 
 app.post('/users/login', function (req, res) {
          var body = _.pick(req.body,'email', 'password');
-         if (typeof body.email !== 'string' && typeof body.password !== 'string'){
-             res.status(404).send();
-         }
-         db.user.findOne({
-           where: {
-              email: body.email
-           }
-         }).then(function (user) {
-             if( !user || !bcrypt.compareSync(body.password,user.get('password_hash'))){
-                return res.status(401).send();
-             }
-                res.json(user.toPublicJSON());
+
+         //using class methods
+         db.user.authenticate(body).then( function (user) {
+               res.json(user.toPublicJSON());
+         }, function () {
+              res.status(401).send();
+         });
+
+         // if (typeof body.email !== 'string' && typeof body.password !== 'string'){
+         //     res.status(404).send();
+         // }
+         // db.user.findOne({
+         //   where: {
+         //      email: body.email
+         //   }
+         // }).then(function (user) {
+         //     if( !user || !bcrypt.compareSync(body.password,user.get('password_hash'))){      //match password entered by user in login and the stired hashed password
+         //        return res.status(401).send();
+         //     }
+         //        res.json(user.toPublicJSON());
              
-         }, function (e) {
-              res.status(500).send();
-         });   
+         // }, function (e) {
+         //      res.status(500).send();
+         // });   
 });
 
 app.delete('/todos/:id', function (req, res) {
@@ -207,10 +215,10 @@ app.put('/todos/:id', function (req, res) {
        } else if (body.hasOwnProperty('completed')){
        	  attributes.completed = body.completed;
        }
-       db.todo.findById(todoid).then(function (todo) {
+       db.todo.findById(todoid).then(function (todo) {                    
         	if (todo){
-               return todo.update(attributes);
-        	}else{
+               return todo.update(attributes);           //todo.update is instance method
+        	}else{                                        
         		res.status(404).send();
         	}
        },function () {
@@ -224,7 +232,7 @@ app.put('/todos/:id', function (req, res) {
       
 });
 
-db.sequelize.sync({force: true}).then(function () {
+db.sequelize.sync().then(function () {          //db.sequelize.sync({force: true}) for droping table and creating new 
         app.listen(PORT, function () {
             console.log('Express listening on post ' + PORT + '!'); 
     });
