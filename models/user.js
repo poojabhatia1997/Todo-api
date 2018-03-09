@@ -1,5 +1,7 @@
 var bcrypt = require('bcrypt');
 var _ = require('underscore');
+var cryptojs = require('crypto-js');
+var jwt = require('jsonwebtoken');
 
 module.exports = function(sequelize, DataType){
         var user = sequelize.define('user',{            // Instead of writing return, use var to make a user variable so that it can be accessible in class methods
@@ -62,25 +64,38 @@ module.exports = function(sequelize, DataType){
            }
         },
       instanceMethods: {                                // create own instance method
-            toPublicJSON: function () {                   // this refers to instance(user.toPublicJSON) this means user
-            var json = this.toJSON();
-            return _.pick(json,'id','email','password','createdAt','updatedAt');      //returned methods in res.json
-          } 
+          toPublicJSON: function () {                   // this refers to instance(user.toPublicJSON) this means user
+                  var json = this.toJSON();
+                  return _.pick(json,'id','email','password','createdAt','updatedAt');      //returned methods in res.json
+                } ,
+          generateToken: function (type) {      // type of the token to generate
+              if(!_.isString(type)){
+                    return undefined;
+                  }
+            
+              try{
+                  var stringData = JSON.stringify({id: this.get('id'), type: type});
+                  var encryptedData = cryptojs.AES.encrypt(stringData, 'Privatekey').toString();
+                  var token = jwt.sign({
+                    token: encryptedData
+                  },'secretKey123$!@');
+
+                  return token;
+
+              } catch(e) {
+                console.log(e);
+                return undefined;
+          }
         }
-        // generateToken: function (type) {      // type of the token to generate
-        //       if(!_.isString(type)){
-        //         return undefined;
-        //       }
-        
-        // try{
-        //     var stringData = JSON.stringify({id: this.get('id'), type: type});
-        //     var encryptedData = cryptojs.AES.encrypt(stringData, "Privatekey").toString();
-        //     var token = jwt.sign({
-        //       token: encryptedData
-        //     },'secretKey');
-        // } catch(e) {
-        //   return undefined;
-        // }
-      });        
+      }
+  });           
         return user;
 } 
+
+
+
+
+
+
+
+
