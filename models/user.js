@@ -26,9 +26,11 @@ module.exports = function(sequelize, DataType){
                  		   len: [7,50]
                   	},
                   set: function (value) {
-                          var salt = bcrypt.genSaltSync(10);                  // 10 -> length of salt key
-                          var hashedPassword = bcrypt.hashSync(value, salt);
-
+                          var salt = bcrypt.genSaltSync(10);                  // 10 -> salt rounds
+                          var hashedPassword = bcrypt.hashSync(value, salt);     //bcrypt.hashSync(myPlaintextPassword, salt);
+                                                                              // to compare password - // Load hash from your password DB.
+                                                                              // bcrypt.compareSync(myPlaintextPassword, hash); // true
+                                                                              // bcrypt.compareSync(someOtherPlaintextPassword, hash); // false
                           this.setDataValue('password',value);
                           this.setDataValue('salt',salt);
                           this.setDataValue('password_hash',hashedPassword);
@@ -61,6 +63,27 @@ module.exports = function(sequelize, DataType){
                             return reject();
                        });   
                    });
+           },
+           findByToken : function (token) {
+                    return new Promise(function (resolve, reject) {
+                         try {
+                            var decodedJWT = jwt.verify(token,'secretKey123$!@');         //jwt.verify(token, secretOrPublicKey, [options, callback])
+                            var bytes = cryptojs.AES.decrypt(decodedJWT.token, 'Privatekey');
+                            var tokenData = JSON.parse(bytes.toString(cryptojs.enc.Utf8));
+                            
+                            user.findById(tokenData.id).then(function (user){
+                                if(user){
+                                    resolve(user);
+                                 } else{
+                                     reject();
+                                 }
+                            },function(e){
+                                reject(e);
+                            });
+                         } catch(e){
+                            reject (e);
+                         }
+                    });
            }
         },
       instanceMethods: {                                // create own instance method

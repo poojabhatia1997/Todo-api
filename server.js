@@ -2,6 +2,7 @@ var express = require('express');
 var bodyParser = require('body-parser');
 var _ = require('underscore'); 
 var db = require('./db.js');
+var middleware = require('./middleware.js')(db);
 var app = express();
 var bcrypt = require('bcrypt');
 
@@ -20,11 +21,11 @@ var todos = [];
 var nextTodoId = 1;
 app.use(bodyParser.json());				
 
-app.get('/' , function (req, res) {
+app.get('/', middleware.requireAuthentication, function (req, res) {
     res.send('Todo API Root');
 });
 
-app.get('/todos', function (req,res) {
+app.get('/todos',middleware.requireAuthentication, function (req,res) {
 	// var queryParams = req.query;
 	// var filteredTodos = todos;
 
@@ -68,7 +69,7 @@ app.get('/todos', function (req,res) {
 
 });
 
-app.get('/todos/:id', function (req,res) {
+app.get('/todos/:id', middleware.requireAuthentication, function (req,res) {
 	var todoid = parseInt( req.params.id, 10 );
 	var matchedTodo;
 //	var matchedTodo = _.findWhere(todos, {id: todoid});
@@ -100,14 +101,16 @@ app.get('/todos/:id', function (req,res) {
 
 });
 
-app.post('/todos', function (req, res) {
+app.post('/todos', middleware.requireAuthentication, function (req, res) {
     //var body = req.body;
      var body = _.pick(req.body, 'description', 'completed');
 
      db.todo.create(body).then(function (todo) {
            res.json(todo.toJSON());
      }, function (e) {
-           res.status(400).json(e);
+           res.status(400).json({
+           	"error" :"Failure"
+           });
      });
 
     // if  (!(_isBoolean(body.completed)) || !(_isString(body.description)))  {
@@ -163,7 +166,7 @@ app.post('/users/login', function (req, res) {
          // });   
 });
 
-app.delete('/todos/:id', function (req, res) {
+app.delete('/todos/:id',middleware.requireAuthentication ,function (req, res) {
     // var todoid = parseInt(req.params.id,10);
     // var matchedTodo = _.findWhere(todos, {id: todoid});
     // if (!matchedTodo) {
@@ -190,7 +193,7 @@ app.delete('/todos/:id', function (req, res) {
     });
 });
 
-app.put('/todos/:id', function (req, res) {
+app.put('/todos/:id',middleware.requireAuthentication ,function (req, res) {
 	// var todoid = parseInt(req.params.id,10);
  //    var matchedTodo = _.findWhere(todos, {id: todoid});
     
