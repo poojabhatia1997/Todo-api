@@ -131,24 +131,23 @@ app.post('/todos', middleware.requireAuthentication, function (req, res) {
      },function (e) {
          res.status(400).json(e);
      });
- });
+ });  
 
 app.post('/users/login', function (req, res) {
          var body = _.pick(req.body,'email', 'password');
-
          //using class methods
          
          db.user.authenticate(body).then(function (user) {
            var token = user.generateToken('authentication');
-           if (token){
-                res.header('Auth', token).json(user.toPublicJSON());
-            } else {
-              res.status(401).send();
-            }
-               
-         }, function () {
-              res.status(401).send();
-         });
+
+           return db.token.create({
+           	   token: token
+           }).then(function (tokenInstance) {
+           	    res.header('Auth', tokenInstance.get('token')).json(user.toPublicJSON());
+           }).catch(function () {
+           	    res.status(401).send();
+           	});
+        });
 
          // if (typeof body.email !== 'string' && typeof body.password !== 'string'){
          //     res.status(404).send();
@@ -167,6 +166,18 @@ app.post('/users/login', function (req, res) {
          //      res.status(500).send();
          // });   
 });
+
+app.delete('/users/login', middleware.requireAuthentication, function (req, res) {
+	console.log("1");
+        req.token.destroy().then(function () {
+        	console.log("2");
+        	res.status(204).send();
+        }).catch(function () {
+        	console.log("3");
+            res.status(500).send();
+        });
+});
+
 
 app.delete('/todos/:id',middleware.requireAuthentication ,function (req, res) {
     // var todoid = parseInt(req.params.id,10);
@@ -194,6 +205,7 @@ app.delete('/todos/:id',middleware.requireAuthentication ,function (req, res) {
     	res.status(500).send();
     });
 });
+
 
 app.put('/todos/:id',middleware.requireAuthentication ,function (req, res) {
 	// var todoid = parseInt(req.params.id,10);
